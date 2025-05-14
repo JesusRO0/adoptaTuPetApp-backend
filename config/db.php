@@ -1,8 +1,8 @@
 <?php
 $host = "db4free.net";
 $db_name = "adoptatupetdb";
-$username = "TU_USUARIO_DB4FREE"; // <-- cámbialo
-$password = "TU_PASSWORD_DB4FREE"; // <-- cámbialo
+$username = "jesusr0"; // <-- cámbialo
+$password = "Adoptatupet1995_"; // <-- cámbialo
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db_name;charset=utf8", $username, $password);
