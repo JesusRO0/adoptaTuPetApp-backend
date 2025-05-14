@@ -1,26 +1,14 @@
 <?php
-class Database {
-    private $host = "sql206.infinityfree.com"; // Servidor
-    private $db_name = "if0_38964328_adoptatupet"; // Tu nombre de base de datos
-    private $username = "if0_38964328"; // Tu usuario
-    private $password = "Neofox1995"; // Contraseña
-    public $conn;
+$host = "db4free.net";
+$db_name = "adoptatupetdb";
+$username = "TU_USUARIO_DB4FREE"; // <-- cámbialo
+$password = "TU_PASSWORD_DB4FREE"; // <-- cámbialo
 
-    public function getConnection() {
-        $this->conn = null;
-
-        try {
-            $this->conn = new PDO(
-                "mysql:host=" . $this->host . ";dbname=" . $this->db_name,
-                $this->username,
-                $this->password
-            );
-            $this->conn->exec("set names utf8");
-        } catch (PDOException $exception) {
-            echo "Error en la conexión: " . $exception->getMessage();
-        }
-
-        return $this->conn;
-    }
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$db_name;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "message" => "Error en la conexión: " . $e->getMessage()]);
+    exit;
 }
-?>
