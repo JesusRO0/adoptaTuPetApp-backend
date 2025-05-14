@@ -1,0 +1,35 @@
+<?php
+require_once 'config/database.php';
+require_once 'models/usuario.php';
+require_once 'view/response.php';
+
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Content-Type: application/json");
+
+// Verifica que se haya enviado un archivo y el ID de usuario
+if (!isset($_POST['idUsuario']) || !isset($_FILES['fotoPerfil'])) {
+    sendError("Faltan parámetros requeridos");
+}
+
+$idUsuario = intval($_POST['idUsuario']);
+$fotoPerfil = $_FILES['fotoPerfil']['tmp_name'];
+
+try {
+    $usuario = new Usuario($pdo);
+    $usuario->idUsuario = $idUsuario;
+    $usuario->fotoPerfil = file_get_contents($fotoPerfil);
+
+    $query = "UPDATE usuario SET fotoPerfil = :fotoPerfil WHERE idUsuario = :idUsuario";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':fotoPerfil', $usuario->fotoPerfil, PDO::PARAM_LOB);
+    $stmt->bindParam(':idUsuario', $usuario->idUsuario);
+
+    if ($stmt->execute()) {
+        sendSuccess(null, "Foto de perfil actualizada correctamente");
+    } else {
+        sendError("No se pudo actualizar la foto", 500);
+    }
+} catch (Exception $e) {
+    sendError("Error: " . $e->getMessage(), 500);
+}
