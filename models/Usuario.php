@@ -17,12 +17,12 @@ class Usuario {
     // REGISTRO DE USUARIO
     public function registrar() {
         $query = "INSERT INTO " . $this->table_name . " 
-        (fotoPerfil, email, usuario, localidad, contrasena) 
-        VALUES (:fotoPerfil, :email, :usuario, :localidad, :contrasena)";
-
+            (fotoPerfil, email, usuario, localidad, contrasena) 
+            VALUES (:fotoPerfil, :email, :usuario, :localidad, :contrasena)";
+        
         $stmt = $this->conn->prepare($query);
 
-        // Sanitizar
+        // Sanitizar entrada
         $this->email = htmlspecialchars(strip_tags($this->email));
         $this->usuario = htmlspecialchars(strip_tags($this->usuario));
         $this->localidad = htmlspecialchars(strip_tags($this->localidad));
@@ -31,10 +31,14 @@ class Usuario {
         // Si no hay foto, establecer una por defecto
         if (empty($this->fotoPerfil)) {
             $defaultPath = __DIR__ . "/../default-avatar.png";
-            $this->fotoPerfil = file_get_contents($defaultPath);
+            if (file_exists($defaultPath)) {
+                $this->fotoPerfil = file_get_contents($defaultPath);
+            } else {
+                $this->fotoPerfil = null;
+            }
         }
 
-        // Bind
+        // Bind parameters
         $stmt->bindParam(':fotoPerfil', $this->fotoPerfil, PDO::PARAM_LOB);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':usuario', $this->usuario);
@@ -55,16 +59,19 @@ class Usuario {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (password_verify($this->contrasena, $row['contrasena'])) {
+                // Rellenar datos del usuario logueado
                 $this->idUsuario = $row['idUsuario'];
                 $this->usuario = $row['usuario'];
                 $this->localidad = $row['localidad'];
+                $this->email = $row['email'];
                 return true;
             }
         }
         return false;
     }
 
-        public function existeEmail($email) {
+    // COMPROBAR SI EXISTE EMAIL
+    public function existeEmail($email) {
         $query = "SELECT idUsuario FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
@@ -72,6 +79,7 @@ class Usuario {
         return $stmt->rowCount() > 0;
     }
 
+    // COMPROBAR SI EXISTE NOMBRE DE USUARIO
     public function existeNombreUsuario($usuario) {
         $query = "SELECT idUsuario FROM " . $this->table_name . " WHERE usuario = :usuario LIMIT 1";
         $stmt = $this->conn->prepare($query);
