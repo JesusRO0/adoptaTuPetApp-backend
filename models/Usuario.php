@@ -49,26 +49,35 @@ class Usuario {
     }
 
     // LOGIN DE USUARIO
-    public function login() {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":email", $this->email);
-        $stmt->execute();
+public function login() {
+    $query = "SELECT * FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindParam(":email", $this->email);
+    $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($stmt->rowCount() > 0) {
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (password_verify($this->contrasena, $row['contrasena'])) {
-                // Rellenar datos del usuario logueado
-                $this->idUsuario = $row['idUsuario'];
-                $this->usuario = $row['usuario'];
-                $this->localidad = $row['localidad'];
-                $this->email = $row['email'];
-                return true;
+        if (password_verify($this->contrasena, $row['contrasena'])) {
+            // Rellenar datos del usuario logueado
+            $this->idUsuario = $row['idUsuario'];
+            $this->usuario = $row['usuario'];
+            $this->localidad = $row['localidad'];
+            $this->email = $row['email'];
+
+            // Codifica la foto de perfil para enviar al cliente
+            if (!empty($row['fotoPerfil'])) {
+                $this->fotoPerfil = base64_encode($row['fotoPerfil']);
+            } else {
+                $this->fotoPerfil = null;
             }
+
+            return true;
         }
-        return false;
     }
+    return false;
+}
+
 
     // COMPROBAR SI EXISTE EMAIL
     public function existeEmail($email) {
