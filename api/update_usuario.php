@@ -10,10 +10,36 @@ if (
     $nombre = $data->usuario;
     $localidad = $data->localidad;
     $email = $data->email;
-    $contrasena = $data->contrasena;
+    $contrasenaNueva = $data->contrasena;
     $fotoPerfil = $data->fotoPerfil; // Base64
 
-    // Cambiar a PDO
+    // 1. Obtener la contraseña actual de la base de datos
+    $stmt = $pdo->prepare("SELECT contrasena FROM usuario WHERE idUsuario = :idUsuario");
+    $stmt->bindParam(':idUsuario', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    $usuarioBD = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$usuarioBD) {
+        echo json_encode(["success" => false, "message" => "Usuario no encontrado"]);
+        exit;
+    }
+
+    $contrasenaActual = $usuarioBD['contrasena'];
+
+    // 2. Comprobar si la contraseña nueva es diferente y no vacía
+    $contrasenaParaGuardar = $contrasenaActual; // por defecto la actual
+
+    if (!empty($contrasenaNueva)) {
+        // Comparamos la nueva con la actual usando password_verify
+        // Si no coincide, es que el usuario cambió la contraseña
+        if (!password_verify($contrasenaNueva, $contrasenaActual)) {
+            // Hashear la nueva contraseña
+            $contrasenaParaGuardar = password_hash($contrasenaNueva, PASSWORD_BCRYPT);
+        }
+        // Si coincide, no cambiaremos el hash para evitar doble hash
+    }
+
+    // 3. Preparar la actualización con la contraseña correcta (hash actual o nuevo)
     $sql = "UPDATE usuario 
             SET usuario = :usuario, localidad = :localidad, email = :email, contrasena = :contrasena, fotoPerfil = :fotoPerfil
             WHERE idUsuario = :idUsuario";
@@ -22,7 +48,7 @@ if (
     $stmt->bindParam(':usuario', $nombre);
     $stmt->bindParam(':localidad', $localidad);
     $stmt->bindParam(':email', $email);
-    $stmt->bindParam(':contrasena', $contrasena);
+    $stmt->bindParam(':contrasena', $contrasenaParaGuardar);
     $stmt->bindParam(':fotoPerfil', $fotoPerfil);
     $stmt->bindParam(':idUsuario', $id, PDO::PARAM_INT);
 
