@@ -23,9 +23,12 @@ class AuthController {
                 "success" => true,
                 "message" => "Login correcto",
                 "usuario" => [
-                    "idUsuario" => $usuario->idUsuario,
-                    "usuario" => $usuario->usuario,
-                    "localidad" => $usuario->localidad
+                    "idUsuario"   => $usuario->idUsuario,
+                    "usuario"     => $usuario->usuario,
+                    "email"       => $usuario->email,
+                    "localidad"   => $usuario->localidad,
+                    "fotoPerfil"  => $usuario->fotoPerfil ?? null,
+                    "contrasena"  => $usuario->contrasena ?? null
                 ]
             ];
         } else {
