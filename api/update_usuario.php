@@ -13,10 +13,18 @@ if (
     $contrasena = $data->contrasena;
     $fotoPerfil = $data->fotoPerfil; // Base64
 
-    $stmt = $conn->prepare("UPDATE usuario 
-                            SET usuario = ?, localidad = ?, email = ?, contrasena = ?, fotoPerfil = ?
-                            WHERE idUsuario = ?");
-    $stmt->bind_param("sssssi", $nombre, $localidad, $email, $contrasena, $fotoPerfil, $id);
+    // Cambiar a PDO
+    $sql = "UPDATE usuario 
+            SET usuario = :usuario, localidad = :localidad, email = :email, contrasena = :contrasena, fotoPerfil = :fotoPerfil
+            WHERE idUsuario = :idUsuario";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':usuario', $nombre);
+    $stmt->bindParam(':localidad', $localidad);
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':contrasena', $contrasena);
+    $stmt->bindParam(':fotoPerfil', $fotoPerfil);
+    $stmt->bindParam(':idUsuario', $id, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         echo json_encode(["success" => true, "message" => "Perfil actualizado con éxito"]);
@@ -26,4 +34,3 @@ if (
 } else {
     echo json_encode(["success" => false, "message" => "Datos incompletos"]);
 }
-?>
