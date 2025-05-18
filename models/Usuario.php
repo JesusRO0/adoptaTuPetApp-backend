@@ -50,22 +50,20 @@ class Usuario {
 
     // LOGIN DE USUARIO
 public function login() {
-    $query = "SELECT * FROM " . $this->table_name . " WHERE email = :email LIMIT 1";
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(":email", $this->email);
+    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE email = :email");
+    $stmt->bindParam(':email', $this->email);
     $stmt->execute();
 
-    if ($stmt->rowCount() > 0) {
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Verificar contraseña
         if (password_verify($this->contrasena, $row['contrasena'])) {
-            // Rellenar datos del usuario logueado
             $this->idUsuario = $row['idUsuario'];
             $this->usuario = $row['usuario'];
-            $this->localidad = $row['localidad'];
             $this->email = $row['email'];
+            $this->localidad = $row['localidad'];
+            $this->contrasena = $row['contrasena']; // si quieres devolver la contraseña (no recomendado)
 
-            // Codifica la foto de perfil para enviar al cliente
+            // Aquí conviertes el BLOB a Base64
             if (!empty($row['fotoPerfil'])) {
                 $this->fotoPerfil = base64_encode($row['fotoPerfil']);
             } else {
