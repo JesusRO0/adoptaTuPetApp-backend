@@ -11,7 +11,7 @@ if (
     $localidad = $data->localidad;
     $email = $data->email;
     $contrasenaNueva = $data->contrasena;
-    $fotoPerfil = $data->fotoPerfil; // Base64
+    $fotoPerfilBase64 = $data->fotoPerfil; // Base64
 
     // 1. Obtener la contraseña actual de la base de datos
     $stmt = $pdo->prepare("SELECT contrasena FROM usuario WHERE idUsuario = :idUsuario");
@@ -30,26 +30,46 @@ if (
     $contrasenaParaGuardar = $contrasenaActual; // por defecto la actual
 
     if (!empty($contrasenaNueva)) {
-        // Comparamos la nueva con la actual usando password_verify
-        // Si no coincide, es que el usuario cambió la contraseña
         if (!password_verify($contrasenaNueva, $contrasenaActual)) {
             // Hashear la nueva contraseña
             $contrasenaParaGuardar = password_hash($contrasenaNueva, PASSWORD_BCRYPT);
         }
-        // Si coincide, no cambiaremos el hash para evitar doble hash
     }
 
-    // 3. Preparar la actualización con la contraseña correcta (hash actual o nuevo)
+    // 3. Decodificar la foto de Base64 a binario
+    $fotoBinaria = null;
+    if (!empty($fotoPerfilBase64)) {
+        // quitar posible prefijo data URI
+        if (preg_match('/^data:image\/\w+;base64,/', $fotoPerfilBase64)) {
+            $fotoPerfilBase64 = preg_replace('/^data:image\/\w+;base64,/', '', $fotoPerfilBase64);
+        }
+        // eliminar espacios o saltos de línea
+        $fotoPerfilBase64 = preg_replace('/\s+/', '', $fotoPerfilBase64);
+        $fotoBinaria = base64_decode($fotoPerfilBase64);
+    }
+
+    // 4. Preparar la actualización con la contraseña y la foto correctas
     $sql = "UPDATE usuario 
-            SET usuario = :usuario, localidad = :localidad, email = :email, contrasena = :contrasena, fotoPerfil = :fotoPerfil
+            SET usuario     = :usuario,
+                localidad   = :localidad,
+                email       = :email,
+                contrasena  = :contrasena,
+                fotoPerfil  = :fotoPerfil
             WHERE idUsuario = :idUsuario";
 
     $stmt = $pdo->prepare($sql);
-    $stmt->bindParam(':usuario', $nombre);
-    $stmt->bindParam(':localidad', $localidad);
-    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':usuario',    $nombre);
+    $stmt->bindParam(':localidad',  $localidad);
+    $stmt->bindParam(':email',      $email);
     $stmt->bindParam(':contrasena', $contrasenaParaGuardar);
-    $stmt->bindParam(':fotoPerfil', $fotoPerfil);
+
+    // BLOB: si no hay imagen nueva, podemos usar NULL
+    if ($fotoBinaria !== null) {
+        $stmt->bindParam(':fotoPerfil', $fotoBinaria, PDO::PARAM_LOB);
+    } else {
+        $stmt->bindValue(':fotoPerfil', null, PDO::PARAM_NULL);
+    }
+
     $stmt->bindParam(':idUsuario', $id, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
