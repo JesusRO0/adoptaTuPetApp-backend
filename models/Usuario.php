@@ -61,7 +61,6 @@ class Usuario {
                 $this->usuario = $row['usuario'];
                 $this->email = $row['email'];
                 $this->localidad = $row['localidad'];
-                $this->contrasena = $row['contrasena']; // hash almacenado
 
                 // Convertir BLOB a Base64 para enviar al frontend
                 if (!empty($row['fotoPerfil'])) {
