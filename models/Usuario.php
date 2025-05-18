@@ -57,17 +57,35 @@ class Usuario {
         if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             // Verificar contraseña
             if (password_verify($this->contrasena, $row['contrasena'])) {
-                $this->idUsuario = $row['idUsuario'];
-                $this->usuario = $row['usuario'];
-                $this->email = $row['email'];
-                $this->localidad = $row['localidad'];
+                $this->idUsuario  = $row['idUsuario'];
+                $this->usuario    = $row['usuario'];
+                $this->email      = $row['email'];
+                $this->localidad  = $row['localidad'];
+                // password remains hashed in $this->contrasena
 
-                // Convertir BLOB a Base64 para enviar al frontend
-                if (!empty($row['fotoPerfil'])) {
-                    $this->fotoPerfil = base64_encode($row['fotoPerfil']);
+                // ----------- Auto-reparación fotoPerfil -------------
+                $raw = $row['fotoPerfil'];
+                if (!empty($raw)) {
+                    // Si parece Base64 de texto
+                    if (preg_match('/^[A-Za-z0-9+\/]+=*$/', $raw)) {
+                        $first = base64_decode($raw);
+                        $magic = substr($first, 0, 4);
+                        // Si no es PNG/JPEG, intentamos doble-decoding
+                        if ($magic !== "\x89PNG" && substr($first, 0, 3) !== "\xFF\xD8\xFF") {
+                            $bin = base64_decode($first);
+                        } else {
+                            $bin = $first;
+                        }
+                    } else {
+                        // ya es blob binario puro
+                        $bin = $raw;
+                    }
+                    // convertimos el blob real a Base64 para el frontend
+                    $this->fotoPerfil = base64_encode($bin);
                 } else {
                     $this->fotoPerfil = null;
                 }
+                // ------------------------------------------------------
 
                 return true;
             }
@@ -75,49 +93,45 @@ class Usuario {
         return false;
     }
 
-    // ACTUALIZAR DATOS DE USUARIO (sin perder la contraseña si no se cambia)
-public function actualizar() {
-    $query = "UPDATE " . $this->table_name . " SET usuario = :usuario, email = :email, localidad = :localidad";
-    
-    $params = [
-        ':usuario' => $this->usuario,
-        ':email' => $this->email,
-        ':localidad' => $this->localidad,
-        ':idUsuario' => $this->idUsuario
-    ];
+    // ACTUALIZAR DATOS DE USUARIO (sin doble-hash de contraseña ni perder foto si no se cambia)
+    public function actualizar() {
+        $query = "UPDATE " . $this->table_name . " SET usuario = :usuario, email = :email, localidad = :localidad";
+        $params = [
+            ':usuario'   => $this->usuario,
+            ':email'     => $this->email,
+            ':localidad' => $this->localidad,
+            ':idUsuario' => $this->idUsuario
+        ];
 
-    // Si la contraseña es vacía o NULL, no actualizamos contraseña
-    if (!empty($this->contrasena)) {
-        // Verificamos si ya es hash (usa password_get_info)
-        $info = password_get_info($this->contrasena);
-        if ($info['algo'] === 0) {
-            // No es hash, hay que hashearla
-            $this->contrasena = password_hash($this->contrasena, PASSWORD_BCRYPT);
+        // Contraseña: solo si viene no vacía y no es ya un hash
+        if (!empty($this->contrasena)) {
+            $info = password_get_info($this->contrasena);
+            if ($info['algo'] === 0) {
+                $this->contrasena = password_hash($this->contrasena, PASSWORD_BCRYPT);
+            }
+            $query .= ", contrasena = :contrasena";
+            $params[':contrasena'] = $this->contrasena;
         }
-        $query .= ", contrasena = :contrasena";
-        $params[':contrasena'] = $this->contrasena;
-    }
 
-    if ($this->fotoPerfil !== null) {
-        $query .= ", fotoPerfil = :fotoPerfil";
-        $params[':fotoPerfil'] = $this->fotoPerfil;
-    }
-
-    $query .= " WHERE idUsuario = :idUsuario";
-
-    $stmt = $this->conn->prepare($query);
-
-    foreach ($params as $key => &$val) {
-        if ($key == ':fotoPerfil') {
-            $stmt->bindParam($key, $val, PDO::PARAM_LOB);
-        } else {
-            $stmt->bindParam($key, $val);
+        // FotoPerfil: si vienen datos, los bindemos como LOB
+        if ($this->fotoPerfil !== null) {
+            $query .= ", fotoPerfil = :fotoPerfil";
+            $params[':fotoPerfil'] = $this->fotoPerfil;
         }
+
+        $query .= " WHERE idUsuario = :idUsuario";
+        $stmt = $this->conn->prepare($query);
+
+        foreach ($params as $key => &$val) {
+            if ($key === ':fotoPerfil') {
+                $stmt->bindParam($key, $val, PDO::PARAM_LOB);
+            } else {
+                $stmt->bindParam($key, $val);
+            }
+        }
+
+        return $stmt->execute();
     }
-
-    return $stmt->execute();
-}
-
 
     // COMPROBAR SI EXISTE EMAIL
     public function existeEmail($email) {
