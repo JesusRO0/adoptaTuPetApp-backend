@@ -77,47 +77,48 @@ class Usuario {
     }
 
     // ACTUALIZAR DATOS DE USUARIO (sin perder la contraseña si no se cambia)
-    public function actualizar() {
-        $query = "UPDATE " . $this->table_name . " SET usuario = :usuario, email = :email, localidad = :localidad";
-        
-        $params = [
-            ':usuario' => $this->usuario,
-            ':email' => $this->email,
-            ':localidad' => $this->localidad,
-            ':idUsuario' => $this->idUsuario
-        ];
+public function actualizar() {
+    $query = "UPDATE " . $this->table_name . " SET usuario = :usuario, email = :email, localidad = :localidad";
+    
+    $params = [
+        ':usuario' => $this->usuario,
+        ':email' => $this->email,
+        ':localidad' => $this->localidad,
+        ':idUsuario' => $this->idUsuario
+    ];
 
-        // Si la contraseña NO está vacía, la actualizamos (hasheándola si es necesario)
-        if (!empty($this->contrasena)) {
-            // Detectar si la contraseña ya está hasheada
-            if (password_get_info($this->contrasena)['algo'] === 0) {
-                $this->contrasena = password_hash($this->contrasena, PASSWORD_BCRYPT);
-            }
-            $query .= ", contrasena = :contrasena";
-            $params[':contrasena'] = $this->contrasena;
+    // Si la contraseña es vacía o NULL, no actualizamos contraseña
+    if (!empty($this->contrasena)) {
+        // Verificamos si ya es hash (usa password_get_info)
+        $info = password_get_info($this->contrasena);
+        if ($info['algo'] === 0) {
+            // No es hash, hay que hashearla
+            $this->contrasena = password_hash($this->contrasena, PASSWORD_BCRYPT);
         }
-
-        // Si fotoPerfil NO es null, la actualizamos
-        if ($this->fotoPerfil !== null) {
-            $query .= ", fotoPerfil = :fotoPerfil";
-            $params[':fotoPerfil'] = $this->fotoPerfil;
-        }
-
-        $query .= " WHERE idUsuario = :idUsuario";
-
-        $stmt = $this->conn->prepare($query);
-
-        // Bind dinámico según parámetros
-        foreach ($params as $key => &$val) {
-            if ($key == ':fotoPerfil') {
-                $stmt->bindParam($key, $val, PDO::PARAM_LOB);
-            } else {
-                $stmt->bindParam($key, $val);
-            }
-        }
-
-        return $stmt->execute();
+        $query .= ", contrasena = :contrasena";
+        $params[':contrasena'] = $this->contrasena;
     }
+
+    if ($this->fotoPerfil !== null) {
+        $query .= ", fotoPerfil = :fotoPerfil";
+        $params[':fotoPerfil'] = $this->fotoPerfil;
+    }
+
+    $query .= " WHERE idUsuario = :idUsuario";
+
+    $stmt = $this->conn->prepare($query);
+
+    foreach ($params as $key => &$val) {
+        if ($key == ':fotoPerfil') {
+            $stmt->bindParam($key, $val, PDO::PARAM_LOB);
+        } else {
+            $stmt->bindParam($key, $val);
+        }
+    }
+
+    return $stmt->execute();
+}
+
 
     // COMPROBAR SI EXISTE EMAIL
     public function existeEmail($email) {
