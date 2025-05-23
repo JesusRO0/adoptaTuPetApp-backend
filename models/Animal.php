@@ -1,11 +1,12 @@
 <?php
+// models/Animal.php
 
 class Animal {
-    // Conexión y tabla
+    // Conexión y nombre de la tabla
     private $conn;
     private $table_name = "animal";
 
-    // Propiedades correspondentes a las columnas de la tabla
+    // Propiedades que corresponden a las columnas de la tabla
     public $idAnimal;
     public $nombre;
     public $especie;
@@ -18,13 +19,16 @@ class Animal {
     public $imagen;
     public $idUsuario;
 
-    // Constructor: recibe la conexión PDO
+    /**
+     * Constructor: recibe la conexión PDO
+     */
     public function __construct($db) {
         $this->conn = $db;
     }
 
     /**
      * Crear un nuevo registro de animal
+     * @return bool éxito o fracaso de la ejecución
      */
     public function crear() {
         $sql = "INSERT INTO " . $this->table_name . "
@@ -43,7 +47,7 @@ class Animal {
         $this->sexo        = htmlspecialchars(strip_tags($this->sexo));
         $this->tamano      = htmlspecialchars(strip_tags($this->tamano));
         $this->descripcion = htmlspecialchars(strip_tags($this->descripcion));
-        // Imagen es base64 limpio (sin data uri)
+        // La imagen debe venir ya limpia: cadena Base64 sin prefijo data:
 
         $stmt->bindParam(':nombre',      $this->nombre);
         $stmt->bindParam(':especie',     $this->especie);
@@ -61,6 +65,7 @@ class Animal {
 
     /**
      * Obtener todos los registros de animales
+     * @return PDOStatement
      */
     public function obtenerTodos() {
         $sql  = "SELECT * FROM " . $this->table_name;
@@ -70,7 +75,9 @@ class Animal {
     }
 
     /**
-     * Obtener animales por usuario
+     * Obtener animales por id de usuario
+     * @param int $idUsuario
+     * @return PDOStatement
      */
     public function obtenerPorUsuario($idUsuario) {
         $sql  = "SELECT * FROM " . $this->table_name . " WHERE idUsuario = :idUsuario";
@@ -82,6 +89,8 @@ class Animal {
 
     /**
      * Obtener un animal por su ID
+     * @param int $idAnimal
+     * @return array|false
      */
     public function obtenerPorId($idAnimal) {
         $sql  = "SELECT * FROM " . $this->table_name . " WHERE idAnimal = :idAnimal LIMIT 1";
@@ -93,6 +102,7 @@ class Animal {
 
     /**
      * Actualizar un registro existente
+     * @return bool
      */
     public function actualizar() {
         $sql = "UPDATE " . $this->table_name . "
@@ -109,7 +119,6 @@ class Animal {
 
         $stmt = $this->conn->prepare($sql);
 
-        // Bind parámetros
         $stmt->bindParam(':nombre',      $this->nombre);
         $stmt->bindParam(':especie',     $this->especie);
         $stmt->bindParam(':raza',        $this->raza);
@@ -126,6 +135,8 @@ class Animal {
 
     /**
      * Eliminar un registro por ID
+     * @param int $idAnimal
+     * @return bool
      */
     public function eliminar($idAnimal) {
         $sql  = "DELETE FROM " . $this->table_name . " WHERE idAnimal = :idAnimal";
@@ -134,4 +145,3 @@ class Animal {
         return $stmt->execute();
     }
 }
-?>
