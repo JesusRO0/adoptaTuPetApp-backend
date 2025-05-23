@@ -1,6 +1,11 @@
 <?php
 // controllers/AnimalController.php
 
+// Permitir peticiones CORS (ajusta el origen según tu dominio)
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+
+require_once __DIR__ . '/../config/db.php';        // Debe definir $pdo (instancia PDO)
 require_once __DIR__ . '/../models/Animal.php';
 
 class AnimalController {
@@ -15,13 +20,27 @@ class AnimalController {
      * y devuelve un JSON con success/message.
      */
     public function add() {
-        // 1. Leer body
-        $data = json_decode(file_get_contents('php://input'));
+        // 1) Leer y decodificar body
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw);
 
-        // 2. Validar campos obligatorios
-        $required = ['nombre','especie','raza','edad','localidad','sexo','tamano','descripcion','imagen','idUsuario'];
+        if (!$data) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'JSON inválido'
+            ]);
+            return;
+        }
+
+        // 2) Validar campos obligatorios
+        $required = [
+            'nombre','especie','raza','edad',
+            'localidad','sexo','tamano',
+            'descripcion','imagen','idUsuario'
+        ];
         foreach ($required as $field) {
-            if (empty($data->$field)) {
+            if (empty($data->$field) && $data->$field !== "0") {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
@@ -31,24 +50,32 @@ class AnimalController {
             }
         }
 
-        // 3. Mapear a modelo y guardar
+        // 3) Mapear a modelo Animal
         $animal = new Animal($this->db);
-        $animal->nombre     = $data->nombre;
-        $animal->especie    = $data->especie;
-        $animal->raza       = $data->raza;
-        $animal->edad       = $data->edad;
-        $animal->localidad  = $data->localidad;
-        $animal->sexo       = $data->sexo;
-        $animal->tamano     = $data->tamano;
-        $animal->descripcion= $data->descripcion;
-        $animal->imagen     = base64_decode($data->imagen);
-        $animal->idUsuario  = $data->idUsuario;
+        $animal->nombre      = $data->nombre;
+        $animal->especie     = $data->especie;
+        $animal->raza        = $data->raza;
+        $animal->edad        = $data->edad;
+        $animal->localidad   = $data->localidad;
+        $animal->sexo        = $data->sexo;
+        $animal->tamano      = $data->tamano;
+        $animal->descripcion = $data->descripcion;
+        // Decodificamos la cadena Base64 para obtener binario
+        $animal->imagen      = base64_decode($data->imagen);
+        $animal->idUsuario   = (int)$data->idUsuario;
 
+        // 4) Intentar crear el registro
         if ($animal->crear()) {
-            echo json_encode(['success'=>true,'message'=>'Animal creado correctamente']);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Animal creado correctamente'
+            ]);
         } else {
             http_response_code(500);
-            echo json_encode(['success'=>false,'message'=>'Error al guardar en BD']);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error al guardar en la base de datos'
+            ]);
         }
     }
 }
