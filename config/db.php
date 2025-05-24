@@ -9,7 +9,7 @@ header("Content-Type: application/json; charset=UTF-8");
 $host     = "db4free.net";
 $db_name  = "adoptatupetdb";
 $username = "jesusr0";
-$password = "Adoptatupet1995_";
+$password = "Adoptatupet1995_07";
 
 // Opciones recomendadas de PDO
 $options = [
