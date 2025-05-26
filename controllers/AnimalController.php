@@ -78,4 +78,24 @@ class AnimalController {
             ]);
         }
     }
+
+    /**
+     * Elimina un animal dado su ID.
+     * Devuelve un array con 'success' y 'message'.
+     */
+    public function eliminar(int $id) {
+        // 1) Verificar que el animal existe
+        $modelo = new Animal($this->db);
+        $existe = $modelo->obtenerPorId($id);
+        if (!$existe) {
+            return ['success' => false, 'message' => "Animal con ID $id no existe"];
+        }
+
+        // 2) Intentar eliminar
+        if ($modelo->eliminar($id)) {
+            return ['success' => true, 'message' => "Animal con ID $id eliminado correctamente"];
+        } else {
+            return ['success' => false, 'message' => 'Error al eliminar el animal de la BD'];
+        }
+    }
 }
