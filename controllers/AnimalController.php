@@ -163,4 +163,11 @@ class AnimalController {
             ]);
         }
     }
+    /**
+     * Devuelve un solo animal por su ID
+     */
+    public function obtenerPorId(int $id) {
+        $modelo = new Animal($this->db);
+        return $modelo->obtenerPorId($id);
+    }
 }
