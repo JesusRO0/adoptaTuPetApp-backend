@@ -98,4 +98,69 @@ class AnimalController {
             return ['success' => false, 'message' => 'Error al eliminar el animal de la BD'];
         }
     }
+
+    /**
+     * Actualiza los datos de un animal existente.
+     * Lee los datos en JSON desde php://input.
+     */
+    public function update() {
+        // 1) Leer y decodificar el body
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw);
+
+        if (!$data) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'JSON inválido'
+            ]);
+            return;
+        }
+
+        // 2) Validar campos obligatorios (incluye idAnimal)
+        $required = [
+            'idAnimal','nombre','especie','raza','edad',
+            'localidad','sexo','tamano',
+            'descripcion','imagen','idUsuario'
+        ];
+        foreach ($required as $field) {
+            if (!isset($data->$field) || (empty($data->$field) && $data->$field !== "0")) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Falta el campo $field"
+                ]);
+                return;
+            }
+        }
+
+        // 3) Mapear a modelo Animal
+        $animal = new Animal($this->db);
+        $animal->idAnimal    = (int)$data->idAnimal;
+        $animal->nombre      = $data->nombre;
+        $animal->especie     = $data->especie;
+        $animal->raza        = $data->raza;
+        $animal->edad        = $data->edad;
+        $animal->localidad   = $data->localidad;
+        $animal->sexo        = $data->sexo;
+        $animal->tamano      = $data->tamano;
+        $animal->descripcion = $data->descripcion;
+        // Decodificamos la cadena Base64 para obtener binario
+        $animal->imagen      = base64_decode($data->imagen);
+        $animal->idUsuario   = (int)$data->idUsuario;
+
+        // 4) Intentar actualizar el registro
+        if ($animal->actualizar()) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Animal actualizado correctamente'
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error al actualizar el animal en la base de datos'
+            ]);
+        }
+    }
 }
