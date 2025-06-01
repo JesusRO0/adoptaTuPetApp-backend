@@ -18,41 +18,42 @@ if (empty($_GET['idUsuario'])) {
 }
 
 $idUsuario = intval($_GET['idUsuario']);
-// Usamos ForoController sólo si necesitas lógica adicional, 
-// pero aquí mostramos la consulta SQL directamente:
 
+// Consulta sobre tabla `post` (en vez de “mensajes”)
 $stmt = $pdo->prepare("
     SELECT 
-        m.idPost      AS idPost,
-        m.idUsuario   AS idUsuario,
-        u.usuario     AS usuarioNombre,
-        u.fotoPerfil  AS fotoPerfil,
-        m.contenido   AS contenido,
-        m.fecha       AS fecha,
-        m.imagen      AS imagen,
-        m.likeCount   AS likeCount
-    FROM mensajes m
-    JOIN usuario u ON m.idUsuario = u.idUsuario
-   WHERE m.idUsuario = ?
-   ORDER BY m.fecha DESC
+        p.idPost       AS idPost,
+        p.idUsuario    AS idUsuario,
+        u.usuario      AS usuarioNombre,
+        u.fotoPerfil   AS fotoPerfil,
+        p.contenido    AS contenido,
+        p.fecha        AS fecha,
+        p.imagen       AS imagen,
+        p.likeCount    AS likeCount
+    FROM post p
+    JOIN usuario u ON p.idUsuario = u.idUsuario
+    WHERE p.idUsuario = ?
+    ORDER BY p.fecha DESC
 ");
 $stmt->execute([$idUsuario]);
 
 $mensajes = [];
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    // Convertir fotoPerfil (BLOB) a Base64
+    // Convertimos fotoPerfil (BLOB) a Base64 si existe
     if (!empty($row['fotoPerfil'])) {
         $row['fotoPerfil'] = base64_encode($row['fotoPerfil']);
     } else {
         $row['fotoPerfil'] = "";
     }
-    // Convertir imagen (BLOB) a Base64
+
+    // Convertimos imagen del post a Base64 si existe
     if (!empty($row['imagen'])) {
         $row['imagenMensaje'] = base64_encode($row['imagen']);
     } else {
         $row['imagenMensaje'] = "";
     }
-    // Ajustar para que coincida con Mensaje.java
+
+    // Ajustamos la estructura para que coincida con Mensaje.java
     $mensajes[] = [
         "idMensaje"        => (int)$row['idPost'],
         "usuarioId"        => (int)$row['idUsuario'],
