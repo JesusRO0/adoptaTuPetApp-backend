@@ -33,27 +33,26 @@ $foroCtrl = new ForoController($pdo);
 $nuevoMensaje = $foroCtrl->add($idUsuario, $texto, $imagenBase64);
 
 if ($nuevoMensaje) {
-    // Devolver un JSON similar a:
-    // { "success": true, "message": "Mensaje creado", "mensaje": { …campos… } }
-    echo json_encode([
-        "success" => true,
-        "message" => "Mensaje creado",
-        "mensaje" => [
-            "idMensaje"        => (int)$nuevoMensaje['idPost'],
-            "usuarioId"        => (int)$nuevoMensaje['idUsuario'],
-            "usuarioNombre"    => $nuevoMensaje['usuarioNombre'],
-            "fotoPerfil"       => !empty($nuevoMensaje['fotoPerfil']) 
-                                     ? base64_encode($nuevoMensaje['fotoPerfil']) 
-                                     : "",
-            "texto"            => $nuevoMensaje['contenido'],
-            "fechaPublicacion" => $nuevoMensaje['fecha'],
-            "imagenMensaje"    => !empty($nuevoMensaje['imagen']) 
-                                     ? base64_encode($nuevoMensaje['imagen']) 
-                                     : "",
-            "likeCount"        => 0,
-            "likedByUser"      => false
-        ]
-    ]);
+    // Devolver SOLO el objeto "mensaje" directamente, sin envoltorio
+    // El array $nuevoMensaje ya contiene las claves: idPost, idUsuario, usuarioNombre, fotoPerfil (binario), contenido, fecha, imagen (binario), likeCount, likedByUser
+    // Adaptamos nombres a los que usa Android (Mensaje.java)
+    $salida = [
+        "idMensaje"        => (int)$nuevoMensaje['idPost'],
+        "usuarioId"        => (int)$nuevoMensaje['idUsuario'],
+        "usuarioNombre"    => $nuevoMensaje['usuarioNombre'],
+        "fotoPerfil"       => !empty($nuevoMensaje['fotoPerfil'])
+                                 ? base64_encode($nuevoMensaje['fotoPerfil'])
+                                 : "",
+        "texto"            => $nuevoMensaje['contenido'],
+        "fechaPublicacion" => $nuevoMensaje['fecha'],
+        "imagenMensaje"    => !empty($nuevoMensaje['imagen'])
+                                 ? base64_encode($nuevoMensaje['imagen'])
+                                 : "",
+        "likeCount"        => 0,
+        "likedByUser"      => false
+    ];
+
+    echo json_encode($salida);
 } else {
     http_response_code(500);
     echo json_encode([
