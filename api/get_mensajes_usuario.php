@@ -19,9 +19,9 @@ if (empty($_GET['idUsuario'])) {
 $idUsuario = intval($_GET['idUsuario']);
 
 // -------------------------------------------------------
-// Aquí asumimos que tu tabla de posts se llama `post`,
-// tu tabla de usuarios `usuario`, y la de likes `post_likes`.
-// `post_likes` contendría algo como: idLike (PK), idPost, idUsuario.
+// Asumimos que tu tabla de posts se llama `post`,
+// tu tabla de usuarios `usuario`,
+// y tu tabla de likes (con la nueva columna idLike) se llama `likepost`.
 // -------------------------------------------------------
 
 $stmt = $pdo->prepare("
@@ -46,24 +46,24 @@ $stmt = $pdo->prepare("
     FROM post p
     JOIN usuario u   ON p.idUsuario = u.idUsuario
 
-    -- Subconsulta para contar todos los likes de cada post
+    -- Subconsulta para contar todos los likes de cada post (ahora en `likepost`)
     LEFT JOIN (
       SELECT idPost, COUNT(*) AS totalLikes
-      FROM post_likes
+      FROM likepost
       GROUP BY idPost
     ) l ON l.idPost = p.idPost
 
-    -- Subconsulta para saber si el usuario actual (GET) ya marcó like
+    -- Subconsulta para saber si el usuario actual (GET) ya marcó like (en `likepost`)
     LEFT JOIN (
       SELECT idPost, idUsuario
-      FROM post_likes
+      FROM likepost
       WHERE idUsuario = ?
     ) ul ON ul.idPost = p.idPost
 
     WHERE p.idUsuario = ?
     ORDER BY p.fecha DESC
 ");
-$stmt->execute([$idUsuario, $idUsuario]);  // Pasamos dos veces: 1) para ul.idUsuario, 2) para filtrar p.idUsuario
+$stmt->execute([ $idUsuario, $idUsuario ]);  // 1) para ul.idUsuario, 2) para filtrar p.idUsuario
 
 $mensajes = [];
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -80,7 +80,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $row['imagenMensaje'] = "";
     }
 
-    // Mapeo final 
+    // Mapeo final al formato que espera Android
     $mensajes[] = [
         "idMensaje"        => (int)$row['idPost'],
         "usuarioId"        => (int)$row['usuarioId'],
