@@ -6,7 +6,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 require_once __DIR__ . '/../config/db.php';
 
-// Verificamos que nos pasen idPost por GET
+// 1) Comprobamos que venga idPost por GET
 if (empty($_GET['idPost'])) {
     http_response_code(400);
     echo json_encode([
@@ -18,18 +18,19 @@ if (empty($_GET['idPost'])) {
 
 $idPost = intval($_GET['idPost']);
 
-// Asumimos que tu tabla de comentarios se llama `comentario`
-// con columnas: idComentario, texto, idUsuario, idPost, fecha
-// Y que tu tabla de usuarios se llama `usuario` (para obtener nombre y foto).
-
+// 2) Preparamos la consulta. Aquí usamos los nombres de columnas tal como están en tu BD:
+//
+//    comentario  (idComentario, texto, idUsuario, idPost, fecha)
+//    usuario     (idUsuario, fotoPerfil, email, usuario, localidad, contrasena)
+//
 $stmt = $pdo->prepare("
     SELECT 
-        c.idComentario      AS idComentario,
-        c.texto             AS texto,
-        c.idUsuario         AS usuarioId,
-        u.usuario           AS usuarioNombre,
-        u.fotoPerfil        AS fotoPerfil,
-        c.fecha             AS fecha
+        c.idComentario   AS idComentario,
+        c.texto          AS texto,
+        c.idUsuario      AS usuarioId,
+        u.usuario        AS usuarioNombre,
+        u.fotoPerfil     AS fotoPerfil,
+        c.fecha          AS fecha
     FROM comentario c
     JOIN usuario u ON c.idUsuario = u.idUsuario
     WHERE c.idPost = ?
@@ -39,7 +40,7 @@ $stmt->execute([$idPost]);
 
 $comentarios = [];
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    // Convertir fotoPerfil BLOB a Base64 si no es nulo
+    // Convertir fotoPerfil (BLOB) a Base64, si existe
     if (!empty($row['fotoPerfil'])) {
         $row['fotoPerfil'] = base64_encode($row['fotoPerfil']);
     } else {
@@ -56,6 +57,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     ];
 }
 
+// 3) Devolvemos el JSON
 echo json_encode($comentarios);
 exit;
 ?>
