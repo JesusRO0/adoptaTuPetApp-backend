@@ -14,27 +14,31 @@ if (!empty($_GET['idUsuario'])) {
 
 /**
  * Trae todos los posts del foro, junto con:
- *   - likeCount  = total de likes para cada post
- *   - likedByUser = si el usuario actual ya dio “like” a ese post
+ *   - likeCount     = total de likes para cada post
+ *   - commentCount  = total de comentarios para cada post (nueva columna en `post`)
+ *   - likedByUser   = si el usuario actual ya dio “like” a ese post
  */
 $stmt = $pdo->prepare("
     SELECT
-      p.idPost                  AS idPost,
-      p.idUsuario               AS usuarioId,
-      u.usuario                 AS usuarioNombre,
-      u.fotoPerfil              AS fotoPerfil,
-      p.contenido               AS contenido,
-      p.fecha                   AS fecha,
-      p.imagen                  AS imagen,
+      p.idPost                    AS idPost,
+      p.idUsuario                 AS usuarioId,
+      u.usuario                   AS usuarioNombre,
+      u.fotoPerfil                AS fotoPerfil,
+      p.contenido                 AS contenido,
+      p.fecha                     AS fecha,
+      p.imagen                    AS imagen,
 
       /* 1) Total de likes de este post (tabla `likepost`) */
-      COALESCE(l.totalLikes, 0) AS likeCount,
+      COALESCE(l.totalLikes, 0)   AS likeCount,
 
-      /* 2) Saber si el usuario actual (idUsuarioActual) marcó like */
+      /* 2) Total de comentarios de este post (columna nueva en post) */
+      COALESCE(p.commentCount, 0) AS commentCount,
+
+      /* 3) Saber si el usuario actual (idUsuarioActual) marcó like */
       CASE 
         WHEN ul.idUsuario IS NULL THEN 0 
         ELSE 1 
-      END                        AS likedByUser
+      END                          AS likedByUser
 
     FROM post p
     JOIN usuario u ON p.idUsuario = u.idUsuario
@@ -83,6 +87,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         "fechaPublicacion" => $row['fecha'],
         "imagenMensaje"    => $row['imagenMensaje'],
         "likeCount"        => (int)$row['likeCount'],
+        "commentCount"     => (int)$row['commentCount'],    // <-- Nueva línea
         "likedByUser"      => ((int)$row['likedByUser'] === 1)
     ];
 }
