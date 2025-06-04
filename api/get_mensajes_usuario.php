@@ -18,12 +18,11 @@ if (empty($_GET['idUsuario'])) {
 
 $idUsuario = intval($_GET['idUsuario']);
 
-// -------------------------------------------------------
-// Asumimos que tu tabla de posts se llama `post`,
-// tu tabla de usuarios `usuario`,
-// y tu tabla de likes (con la nueva columna idLike) se llama `likepost`.
-// -------------------------------------------------------
-
+/**
+ * Trae solo los posts de este usuario, junto con:
+ *   - likeCount  = total de likes de cada post
+ *   - likedByUser = si el propio usuario ya dio “like” a su propio post (suele ser 0)
+ */
 $stmt = $pdo->prepare("
     SELECT 
       p.idPost                  AS idPost,
@@ -34,26 +33,26 @@ $stmt = $pdo->prepare("
       p.fecha                   AS fecha,
       p.imagen                  AS imagen,
 
-      -- 1) Contamos cuántos likes totales tiene este post
+      /* 1) Total de likes de este post */
       COALESCE(l.totalLikes, 0) AS likeCount,
 
-      -- 2) Vemos si el usuario actual ya hizo 'like' (1) o no (0)
+      /* 2) Saber si este mismo usuario marcó like (raro en su propio historial) */
       CASE 
         WHEN ul.idUsuario IS NULL THEN 0 
         ELSE 1 
       END                        AS likedByUser
 
     FROM post p
-    JOIN usuario u   ON p.idUsuario = u.idUsuario
+    JOIN usuario u ON p.idUsuario = u.idUsuario
 
-    -- Subconsulta para contar todos los likes de cada post (ahora en `likepost`)
+    /* Subconsulta: total de likes agrupados por idPost */
     LEFT JOIN (
       SELECT idPost, COUNT(*) AS totalLikes
       FROM likepost
       GROUP BY idPost
     ) l ON l.idPost = p.idPost
 
-    -- Subconsulta para saber si el usuario actual (GET) ya marcó like (en `likepost`)
+    /* Subconsulta: si este usuario (idUsuario) ya dio like a ese post */
     LEFT JOIN (
       SELECT idPost, idUsuario
       FROM likepost
@@ -63,7 +62,7 @@ $stmt = $pdo->prepare("
     WHERE p.idUsuario = ?
     ORDER BY p.fecha DESC
 ");
-$stmt->execute([ $idUsuario, $idUsuario ]);  // 1) para ul.idUsuario, 2) para filtrar p.idUsuario
+$stmt->execute([ $idUsuario, $idUsuario ]);
 
 $mensajes = [];
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -80,7 +79,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $row['imagenMensaje'] = "";
     }
 
-    // Mapeo final al formato que espera Android
+    // Construir el JSON que espera Mensaje.java
     $mensajes[] = [
         "idMensaje"        => (int)$row['idPost'],
         "usuarioId"        => (int)$row['usuarioId'],
@@ -96,4 +95,3 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
 echo json_encode($mensajes);
 exit;
-?>
