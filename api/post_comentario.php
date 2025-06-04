@@ -51,6 +51,16 @@ try {
     if ($res) {
         // Obtener el ID recién insertado
         $nuevoId = (int)$pdo->lastInsertId();
+
+        // ACTUALIZAR commentCount en la tabla 'post'
+        $updateStmt = $pdo->prepare("
+            UPDATE post
+            SET commentCount = commentCount + 1
+            WHERE idPost = :idPost
+        ");
+        $updateStmt->bindParam(':idPost', $idPost, PDO::PARAM_INT);
+        $updateStmt->execute();
+
         // Devolver JSON de éxito
         echo json_encode([
             "success"      => true,
