@@ -163,11 +163,30 @@ class AnimalController {
             ]);
         }
     }
+
     /**
      * Devuelve un solo animal por su ID
      */
     public function obtenerPorId(int $id) {
         $modelo = new Animal($this->db);
         return $modelo->obtenerPorId($id);
+    }
+
+    /**
+     * NUEVO: Devuelve los 5 animales más recientes en JSON.
+     * Utiliza el método obtenerUltimos() del modelo Animal.
+     */
+    public function obtenerUltimos() {
+        $modelo = new Animal($this->db);
+        $stmt = $modelo->obtenerUltimos();
+        $animales = [];
+
+        // Convertir cada registro: binario de imagen a Base64
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $row['imagen'] = base64_encode($row['imagen']);
+            $animales[] = $row;
+        }
+
+        echo json_encode($animales);
     }
 }
