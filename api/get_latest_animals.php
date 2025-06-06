@@ -14,35 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../config/db.php';
 
 try {
-    // 1) Seleccionar los 5 animales más recientes
-    //    Se asume que la tabla `animal` tiene al menos los siguientes campos:
-    //    idAnimal, nombre, especie, raza, edad, localidad, sexo, tamano, descripcion, imagen, idUsuario
+    // Obtenemos los 5 últimos animales registrados
     $stmt = $pdo->prepare("
-        SELECT 
-            idAnimal,
-            nombre,
-            especie,
-            raza,
-            edad,
-            localidad,
-            sexo,
-            tamano,
-            descripcion,
-            imagen,
-            idUsuario
-        FROM animal
-        ORDER BY idAnimal DESC
-        LIMIT 5
+        SELECT idAnimal, nombre, especie, raza, edad, localidad, sexo, tamano, descripcion, imagen, idUsuario
+          FROM animal
+         ORDER BY idAnimal DESC
+         LIMIT 5
     ");
     $stmt->execute();
-    $animals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $animales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 2) Construir respuesta
-    echo json_encode([
-        "success" => true,
-        "message" => "Últimos animales obtenidos correctamente",
-        "animals" => $animals
-    ]);
+    echo json_encode($animales);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([
@@ -51,6 +33,3 @@ try {
     ]);
     exit;
 }
-
-exit;
-?>
