@@ -8,7 +8,7 @@ header("Content-Type: application/json; charset=UTF-8");
 require_once __DIR__ . '/../config/db.php';
 
 try {
-    // Seleccionamos los 5 animales más recientes (por idAnimal descendente)
+    // 1) Seleccionamos los 5 animales más recientes (por idAnimal descendente)
     $stmt = $pdo->prepare("
         SELECT 
             idAnimal, 
@@ -28,10 +28,19 @@ try {
     ");
     $stmt->execute();
 
-    // Obtenemos todos los registros como array asociativo
+    // 2) Obtenemos todos los registros como array asociativo
     $animales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Devolvemos el JSON (la imagen viene en BLOB, el cliente la convertirá a Base64)
+    // 3) Convertimos cada campo ‘imagen’ (BLOB) a Base64
+    foreach ($animales as &$fila) {
+        if (isset($fila['imagen']) && !empty($fila['imagen'])) {
+            $fila['imagen'] = base64_encode($fila['imagen']);
+        } else {
+            $fila['imagen'] = null;
+        }
+    }
+
+    // 4) Devolvemos el JSON resultante
     echo json_encode($animales);
 
 } catch (PDOException $e) {
