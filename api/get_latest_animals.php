@@ -14,12 +14,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../config/db.php';
 
 try {
-    // Obtenemos los 5 últimos animales registrados
+    // Seleccionamos los últimos 5 animales añadidos (ordenados por ID descendente)
     $stmt = $pdo->prepare("
-        SELECT idAnimal, nombre, especie, raza, edad, localidad, sexo, tamano, descripcion, imagen, idUsuario
-          FROM animal
-         ORDER BY idAnimal DESC
-         LIMIT 5
+        SELECT 
+            idAnimal,
+            nombre,
+            especie,
+            raza,
+            edad,
+            localidad,
+            sexo,
+            tamano,
+            descripcion,
+            imagen,
+            idUsuario
+        FROM animal
+        ORDER BY idAnimal DESC
+        LIMIT 5
     ");
     $stmt->execute();
     $animales = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -31,5 +42,5 @@ try {
         "success" => false,
         "message" => "Error de base de datos: " . $e->getMessage()
     ]);
-    exit;
 }
+exit;
