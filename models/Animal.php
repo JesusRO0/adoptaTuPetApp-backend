@@ -144,4 +144,17 @@ class Animal {
         $stmt->bindParam(':idAnimal', $idAnimal, PDO::PARAM_INT);
         return $stmt->execute();
     }
+
+    /**
+     * NUEVO: Obtener los 5 animales más recientes (ordenados por idAnimal DESC).
+     * @return PDOStatement
+     */
+    public function obtenerUltimos() {
+        $sql  = "SELECT * FROM " . $this->table_name . "
+                 ORDER BY idAnimal DESC
+                 LIMIT 5";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt;
+    }
 }
